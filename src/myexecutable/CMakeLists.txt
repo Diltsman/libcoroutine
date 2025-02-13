@@ -5,8 +5,10 @@ target_sources(myexecutable
 )
 
 target_compile_features(myexecutable PRIVATE cxx_std_23)
-set_target_properties(myexecutable PROPERTIES CXX_EXTENSIONS OFF
-                                              CXX_CLANG_TIDY "clang-tidy")
+set_target_properties(myexecutable PROPERTIES CXX_EXTENSIONS OFF)
+if(CXX_COMPILER_ID STREQUAL "Clang")
+  set_target_properties(myexecutable PROPERTIES CXX_CLANG_TIDY "clang-tidy")
+endif()
 
 target_link_libraries(myexecutable PRIVATE libmy)
 

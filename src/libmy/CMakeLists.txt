@@ -7,8 +7,10 @@ target_sources(libmy
 )
 
 target_compile_features(libmy PRIVATE cxx_std_23)
-set_target_properties(libmy PROPERTIES CXX_EXTENSIONS OFF
-                                       CXX_CLANG_TIDY "clang-tidy")
+set_target_properties(libmy PROPERTIES CXX_EXTENSIONS OFF)
+if(CXX_COMPILER_ID STREQUAL "Clang")
+  set_target_properties(libmy PROPERTIES CXX_CLANG_TIDY "clang-tidy")
+endif()
 
 target_compile_options(
   libmy
