@@ -1,4 +1,4 @@
-import libmy;
+import libexpectedcoroutine;
 
 #include <catch2/catch_all.hpp>
 
