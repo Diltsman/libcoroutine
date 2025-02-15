@@ -15,7 +15,14 @@ export {
   }
 
   template <typename T> struct expected_wrapper {
-    result_t<T> &m_result;
+    // Initialize as errno 0 so there are no restrictions on T
+    // caused by initializing this
+    exco::result_t<T> m_result{exco::unerr(static_cast<std::errc>(0))};
+    expected_wrapper<T> *&m_ptr_to_this;
+    expected_wrapper(expected_wrapper<T> *&ptr_to_this)
+        : m_ptr_to_this{ptr_to_this} {
+      m_ptr_to_this = this;
+    }
     operator result_t<T>() { return std::move(m_result); };
   };
   } // namespace exco
@@ -42,18 +49,20 @@ export {
     };
 
     struct promise_type {
-      // Initialize as errno 0 so there are no restrictions on T
-      // caused by initializing this
-      exco::result_t<T> m_result{exco::unerr(static_cast<std::errc>(0))};
+      exco::expected_wrapper<T> *m_ptr_to_wrapper;
       auto initial_suspend() noexcept -> std::suspend_never { return {}; }
       auto final_suspend() noexcept -> std::suspend_never { return {}; }
-      auto return_value(std::error_code ec) { m_result = std::unexpected{ec}; }
-      auto return_value(auto &&t) { m_result = std::move(t); }
-      auto get_return_object() { return exco::expected_wrapper<T>{m_result}; }
+      auto return_value(std::error_code ec) {
+        m_ptr_to_wrapper->m_result = std::unexpected{ec};
+      }
+      auto return_value(auto &&t) { m_ptr_to_wrapper->m_result = std::move(t); }
+      auto get_return_object() {
+        return exco::expected_wrapper<T>{m_ptr_to_wrapper};
+      }
       auto unhandled_exception() {}
       template <typename T1> auto await_transform(exco::result_t<T1> value) {
-        m_result = value;
-        return awaiter_type<T1>{value};
+        m_ptr_to_wrapper->m_result = std::move(value);
+        return awaiter_type<T1>{m_ptr_to_wrapper->m_result};
       }
     };
   };
