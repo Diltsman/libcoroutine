@@ -1,13 +1,17 @@
 module;
 
+#include <any>
 #include <coroutine>
 #include <expected>
 #include <filesystem>
+#include <functional>
 #include <future>
+#include <optional>
 #include <regex>
 #include <stdexcept>
 #include <system_error>
 #include <type_traits>
+#include <variant>
 
 export module libexpectedcoroutine;
 export import :stdexception;
@@ -105,7 +109,7 @@ export {
         } catch (std::system_error const &e) {
           m_ptr_to_wrapper->m_result = std::unexpected{e.code()};
 #if defined(__cpp_transactional_memory) && __cpp_transactional_memory >= 201505
-        } catch (std::tx_exception<int> const &) {
+        } catch (std::tx_exception<void> const &) {
           static_assert(false, "tx_exception is a template, how to handle it?");
 #endif
 #if defined(__cpp_lib_chrono) && __cpp_lib_chrono >= 201907L
@@ -113,6 +117,45 @@ export {
               false, "std::chrono::nonexistent_local_time && "
                      "std::chrono::ambiguous_local_time not implemented yet");
 #endif
+        } catch (std::format_error const &) {
+          m_ptr_to_wrapper->m_result =
+              exco::unerr(exco::stdexception::format_error);
+        } catch (std::runtime_error const &) {
+          m_ptr_to_wrapper->m_result =
+              exco::unerr(exco::stdexception::runtime_error);
+        } catch (std::bad_typeid const &) {
+          m_ptr_to_wrapper->m_result =
+              exco::unerr(exco::stdexception::bad_typeid);
+        } catch (std::bad_any_cast const &) {
+          m_ptr_to_wrapper->m_result =
+              exco::unerr(exco::stdexception::bad_any_cast);
+        } catch (std::bad_cast const &) {
+          m_ptr_to_wrapper->m_result =
+              exco::unerr(exco::stdexception::bad_cast);
+        } catch (std::bad_optional_access const &) {
+          m_ptr_to_wrapper->m_result =
+              exco::unerr(exco::stdexception::bad_optional_access);
+        } catch (std::bad_expected_access<void> const &) {
+          m_ptr_to_wrapper->m_result =
+              exco::unerr(exco::stdexception::bad_expected_access);
+        } catch (std::bad_weak_ptr const &) {
+          m_ptr_to_wrapper->m_result =
+              exco::unerr(exco::stdexception::bad_weak_ptr);
+        } catch (std::bad_function_call const &) {
+          m_ptr_to_wrapper->m_result =
+              exco::unerr(exco::stdexception::bad_function_call);
+        } catch (std::bad_array_new_length const &) {
+          m_ptr_to_wrapper->m_result =
+              exco::unerr(exco::stdexception::bad_array_new_length);
+        } catch (std::bad_alloc const &) {
+          m_ptr_to_wrapper->m_result =
+              exco::unerr(exco::stdexception::bad_alloc);
+        } catch (std::bad_exception const &) {
+          m_ptr_to_wrapper->m_result =
+              exco::unerr(exco::stdexception::bad_exception);
+        } catch (std::bad_variant_access const &) {
+          m_ptr_to_wrapper->m_result =
+              exco::unerr(exco::stdexception::bad_variant_access);
         } catch (std::exception const &) {
           m_ptr_to_wrapper->m_result =
               exco::unerr(exco::stdexception::exception);

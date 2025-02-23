@@ -34,7 +34,7 @@ export {
     bad_expected_access,
     bad_weak_ptr,
     bad_function_call,
-    badd_alloc,
+    bad_alloc,
     bad_array_new_length,
     bad_exception,
     bad_variant_access

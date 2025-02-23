@@ -1,10 +1,13 @@
 import libexpectedcoroutine;
 
+#include <any>
 #include <catch2/catch_all.hpp>
 #include <chrono>
 #include <coroutine>
+#include <expected>
 #include <filesystem>
 #include <future>
+#include <optional>
 #include <regex>
 
 TEST_CASE("co_return returns expected value", "[expectedcoroutine]") {
@@ -117,6 +120,28 @@ TEST_CASE("std::exceptions convert to error_code", "[expectedcoroutine]") {
 TEMPLATE_TEST_CASE_SIG(
     "std::exceptions convert to error_code", "[expectedcoroutine]",
     ((typename T, exco::stdexception V), T, V),
+    (std::exception, exco::stdexception::exception),
+    (std::bad_typeid, exco::stdexception::bad_typeid),
+    (std::bad_any_cast, exco::stdexception::bad_any_cast),
+    (std::bad_cast, exco::stdexception::bad_cast),
+    (std::bad_optional_access, exco::stdexception::bad_optional_access),
+    (std::bad_weak_ptr, exco::stdexception::bad_weak_ptr),
+    (std::bad_function_call, exco::stdexception::bad_function_call),
+    (std::bad_array_new_length, exco::stdexception::bad_array_new_length),
+    (std::bad_alloc, exco::stdexception::bad_alloc),
+    (std::bad_exception, exco::stdexception::bad_exception),
+    (std::bad_variant_access, exco::stdexception::bad_variant_access)) {
+  auto const result = []() -> exco::result_t<int> {
+    throw T{};
+    co_return 0;
+  }();
+  REQUIRE_FALSE(result.has_value());
+  REQUIRE(result.error() == exco::unerr(V).error());
+}
+
+TEMPLATE_TEST_CASE_SIG(
+    "std::exceptions convert to error_code", "[expectedcoroutine]",
+    ((typename T, exco::stdexception V), T, V),
     (std::logic_error, exco::stdexception::logic_error),
     (std::invalid_argument, exco::stdexception::invalid_argument),
     (std::domain_error, exco::stdexception::domain_error),
@@ -125,7 +150,11 @@ TEMPLATE_TEST_CASE_SIG(
     (std::range_error, exco::stdexception::range_error),
     (std::overflow_error, exco::stdexception::overflow_error),
     (std::underflow_error, exco::stdexception::underflow_error),
-    (std::ios_base::failure, exco::stdexception::ios_base_failure)) {
+    (std::ios_base::failure, exco::stdexception::ios_base_failure),
+    (std::format_error, exco::stdexception::format_error),
+    (std::runtime_error, exco::stdexception::runtime_error),
+    (std::bad_expected_access<char const *>,
+     exco::stdexception::bad_expected_access)) {
   auto const result = []() -> exco::result_t<int> {
     throw T{""};
     co_return 0;
@@ -169,16 +198,6 @@ TEMPLATE_TEST_CASE_SIG(
 
 TEST_CASE("thrown exceptions converted to correct error_code",
           "[expectedcoroutine]") {
-  SECTION("std::exception") {
-    auto const result = []() -> exco::result_t<int> {
-      throw std::exception{};
-      co_return 0;
-    }();
-    REQUIRE_FALSE(result.has_value());
-    REQUIRE(result.error() ==
-            exco::unerr(exco::stdexception::exception).error());
-  }
-
   SECTION("std::filesystem::filesystem_error") {
     auto const result = []() -> exco::result_t<int> {
       throw std::filesystem::filesystem_error{
@@ -201,7 +220,7 @@ TEST_CASE("thrown exceptions converted to correct error_code",
 #if defined(__cpp_transactional_memory) && __cpp_transactional_memory >= 201505
   SECTION("std::tx_exception") {
     auto const result = []() -> exco::result_t<int> {
-      throw std::tx_exception{""};
+      throw std::tx_exception<int>{""};
       co_return 0;
     }();
     REQUIRE_FALSE(result.has_value());
