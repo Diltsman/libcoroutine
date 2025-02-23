@@ -114,6 +114,59 @@ TEST_CASE("std::exceptions convert to error_code", "[expectedcoroutine]") {
   }
 }
 
+TEMPLATE_TEST_CASE_SIG(
+    "std::exceptions convert to error_code", "[expectedcoroutine]",
+    ((typename T, exco::stdexception V), T, V),
+    (std::logic_error, exco::stdexception::logic_error),
+    (std::invalid_argument, exco::stdexception::invalid_argument),
+    (std::domain_error, exco::stdexception::domain_error),
+    (std::length_error, exco::stdexception::length_error),
+    (std::out_of_range, exco::stdexception::out_of_range),
+    (std::range_error, exco::stdexception::range_error),
+    (std::overflow_error, exco::stdexception::overflow_error),
+    (std::underflow_error, exco::stdexception::underflow_error),
+    (std::ios_base::failure, exco::stdexception::ios_base_failure)) {
+  auto const result = []() -> exco::result_t<int> {
+    throw T{""};
+    co_return 0;
+  }();
+  REQUIRE_FALSE(result.has_value());
+  REQUIRE(result.error() == exco::unerr(V).error());
+}
+
+TEMPLATE_TEST_CASE_SIG("std::future_error convert to error_code",
+                       "[expectedcoroutine]", ((std::future_errc V), V),
+                       (std::future_errc::broken_promise),
+                       (std::future_errc::future_already_retrieved),
+                       (std::future_errc::promise_already_satisfied),
+                       (std::future_errc::no_state)) {
+  auto const result = []() -> exco::result_t<int> {
+    throw std::future_error{V};
+    co_return 0;
+  }();
+  REQUIRE_FALSE(result.has_value());
+  REQUIRE(result.error() == exco::unerr(V).error());
+}
+
+TEMPLATE_TEST_CASE_SIG(
+    "std::regex_error convert to error_code", "[expectedcoroutine]",
+    ((std::regex_constants::error_type V), V),
+    (std::regex_constants::error_collate), (std::regex_constants::error_ctype),
+    (std::regex_constants::error_escape), (std::regex_constants::error_backref),
+    (std::regex_constants::error_brack), (std::regex_constants::error_paren),
+    (std::regex_constants::error_brace), (std::regex_constants::error_badbrace),
+    (std::regex_constants::error_range), (std::regex_constants::error_space),
+    (std::regex_constants::error_badrepeat),
+    (std::regex_constants::error_complexity),
+    (std::regex_constants::error_stack)) {
+  auto const result = []() -> exco::result_t<int> {
+    throw std::regex_error{V};
+    co_return 0;
+  }();
+  REQUIRE_FALSE(result.has_value());
+  REQUIRE(result.error() == exco::unerr(V).error());
+}
+
 TEST_CASE("thrown exceptions converted to correct error_code",
           "[expectedcoroutine]") {
   SECTION("std::exception") {
@@ -124,270 +177,6 @@ TEST_CASE("thrown exceptions converted to correct error_code",
     REQUIRE_FALSE(result.has_value());
     REQUIRE(result.error() ==
             exco::unerr(exco::stdexception::exception).error());
-  }
-
-  SECTION("std::logic_error") {
-    auto const result = []() -> exco::result_t<int> {
-      throw std::logic_error{""};
-      co_return 0;
-    }();
-    REQUIRE_FALSE(result.has_value());
-    REQUIRE(result.error() ==
-            exco::unerr(exco::stdexception::logic_error).error());
-  }
-
-  SECTION("std::invalid_argument") {
-    auto const result = []() -> exco::result_t<int> {
-      throw std::invalid_argument{""};
-      co_return 0;
-    }();
-    REQUIRE_FALSE(result.has_value());
-    REQUIRE(result.error() ==
-            exco::unerr(exco::stdexception::invalid_argument).error());
-  }
-
-  SECTION("std::domain_error") {
-    auto const result = []() -> exco::result_t<int> {
-      throw std::domain_error{""};
-      co_return 0;
-    }();
-    REQUIRE_FALSE(result.has_value());
-    REQUIRE(result.error() ==
-            exco::unerr(exco::stdexception::domain_error).error());
-  }
-
-  SECTION("std::length_error") {
-    auto const result = []() -> exco::result_t<int> {
-      throw std::length_error{""};
-      co_return 0;
-    }();
-    REQUIRE_FALSE(result.has_value());
-    REQUIRE(result.error() ==
-            exco::unerr(exco::stdexception::length_error).error());
-  }
-
-  SECTION("std::out_of_range") {
-    auto const result = []() -> exco::result_t<int> {
-      throw std::out_of_range{""};
-      co_return 0;
-    }();
-    REQUIRE_FALSE(result.has_value());
-    REQUIRE(result.error() ==
-            exco::unerr(exco::stdexception::out_of_range).error());
-  }
-
-  SECTION("std::future_error") {
-    SECTION("broken_promise") {
-      auto const result = []() -> exco::result_t<int> {
-        throw std::future_error{std::future_errc::broken_promise};
-        co_return 0;
-      }();
-      REQUIRE_FALSE(result.has_value());
-      REQUIRE(result.error() ==
-              exco::unerr(std::future_errc::broken_promise).error());
-    }
-
-    SECTION("future_already_retrieved") {
-      auto const result = []() -> exco::result_t<int> {
-        throw std::future_error{std::future_errc::future_already_retrieved};
-        co_return 0;
-      }();
-      REQUIRE_FALSE(result.has_value());
-      REQUIRE(result.error() ==
-              exco::unerr(std::future_errc::future_already_retrieved).error());
-    }
-
-    SECTION("promise_already_satisfied") {
-      auto const result = []() -> exco::result_t<int> {
-        throw std::future_error{std::future_errc::promise_already_satisfied};
-        co_return 0;
-      }();
-      REQUIRE_FALSE(result.has_value());
-      REQUIRE(result.error() ==
-              exco::unerr(std::future_errc::promise_already_satisfied).error());
-    }
-
-    SECTION("no_state") {
-      auto const result = []() -> exco::result_t<int> {
-        throw std::future_error{std::future_errc::no_state};
-        co_return 0;
-      }();
-      REQUIRE_FALSE(result.has_value());
-      REQUIRE(result.error() ==
-              exco::unerr(std::future_errc::no_state).error());
-    }
-  }
-
-  SECTION("std::range_error") {
-    auto const result = []() -> exco::result_t<int> {
-      throw std::range_error{""};
-      co_return 0;
-    }();
-    REQUIRE_FALSE(result.has_value());
-    REQUIRE(result.error() ==
-            exco::unerr(exco::stdexception::range_error).error());
-  }
-
-  SECTION("std::overflow_error") {
-    auto const result = []() -> exco::result_t<int> {
-      throw std::overflow_error{""};
-      co_return 0;
-    }();
-    REQUIRE_FALSE(result.has_value());
-    REQUIRE(result.error() ==
-            exco::unerr(exco::stdexception::overflow_error).error());
-  }
-
-  SECTION("std::underflow_error") {
-    auto const result = []() -> exco::result_t<int> {
-      throw std::underflow_error{""};
-      co_return 0;
-    }();
-    REQUIRE_FALSE(result.has_value());
-    REQUIRE(result.error() ==
-            exco::unerr(exco::stdexception::underflow_error).error());
-  }
-
-  SECTION("std::regex_error") {
-    SECTION("error_collate") {
-      auto const result = []() -> exco::result_t<int> {
-        throw std::regex_error{std::regex_constants::error_collate};
-        co_return 0;
-      }();
-      REQUIRE_FALSE(result.has_value());
-      REQUIRE(result.error() ==
-              exco::unerr(std::regex_constants::error_collate).error());
-    }
-
-    SECTION("error_ctype") {
-      auto const result = []() -> exco::result_t<int> {
-        throw std::regex_error{std::regex_constants::error_ctype};
-        co_return 0;
-      }();
-      REQUIRE_FALSE(result.has_value());
-      REQUIRE(result.error() ==
-              exco::unerr(std::regex_constants::error_ctype).error());
-    }
-
-    SECTION("error_escape") {
-      auto const result = []() -> exco::result_t<int> {
-        throw std::regex_error{std::regex_constants::error_escape};
-        co_return 0;
-      }();
-      REQUIRE_FALSE(result.has_value());
-      REQUIRE(result.error() ==
-              exco::unerr(std::regex_constants::error_escape).error());
-    }
-
-    SECTION("error_backref") {
-      auto const result = []() -> exco::result_t<int> {
-        throw std::regex_error{std::regex_constants::error_backref};
-        co_return 0;
-      }();
-      REQUIRE_FALSE(result.has_value());
-      REQUIRE(result.error() ==
-              exco::unerr(std::regex_constants::error_backref).error());
-    }
-
-    SECTION("error_brack") {
-      auto const result = []() -> exco::result_t<int> {
-        throw std::regex_error{std::regex_constants::error_brack};
-        co_return 0;
-      }();
-      REQUIRE_FALSE(result.has_value());
-      REQUIRE(result.error() ==
-              exco::unerr(std::regex_constants::error_brack).error());
-    }
-
-    SECTION("error_paren") {
-      auto const result = []() -> exco::result_t<int> {
-        throw std::regex_error{std::regex_constants::error_paren};
-        co_return 0;
-      }();
-      REQUIRE_FALSE(result.has_value());
-      REQUIRE(result.error() ==
-              exco::unerr(std::regex_constants::error_paren).error());
-    }
-
-    SECTION("error_brace") {
-      auto const result = []() -> exco::result_t<int> {
-        throw std::regex_error{std::regex_constants::error_brace};
-        co_return 0;
-      }();
-      REQUIRE_FALSE(result.has_value());
-      REQUIRE(result.error() ==
-              exco::unerr(std::regex_constants::error_brace).error());
-    }
-
-    SECTION("error_badbrace") {
-      auto const result = []() -> exco::result_t<int> {
-        throw std::regex_error{std::regex_constants::error_badbrace};
-        co_return 0;
-      }();
-      REQUIRE_FALSE(result.has_value());
-      REQUIRE(result.error() ==
-              exco::unerr(std::regex_constants::error_badbrace).error());
-    }
-
-    SECTION("error_range") {
-      auto const result = []() -> exco::result_t<int> {
-        throw std::regex_error{std::regex_constants::error_range};
-        co_return 0;
-      }();
-      REQUIRE_FALSE(result.has_value());
-      REQUIRE(result.error() ==
-              exco::unerr(std::regex_constants::error_range).error());
-    }
-
-    SECTION("error_space") {
-      auto const result = []() -> exco::result_t<int> {
-        throw std::regex_error{std::regex_constants::error_space};
-        co_return 0;
-      }();
-      REQUIRE_FALSE(result.has_value());
-      REQUIRE(result.error() ==
-              exco::unerr(std::regex_constants::error_space).error());
-    }
-
-    SECTION("error_badrepeat") {
-      auto const result = []() -> exco::result_t<int> {
-        throw std::regex_error{std::regex_constants::error_badrepeat};
-        co_return 0;
-      }();
-      REQUIRE_FALSE(result.has_value());
-      REQUIRE(result.error() ==
-              exco::unerr(std::regex_constants::error_badrepeat).error());
-    }
-
-    SECTION("error_complexity") {
-      auto const result = []() -> exco::result_t<int> {
-        throw std::regex_error{std::regex_constants::error_complexity};
-        co_return 0;
-      }();
-      REQUIRE_FALSE(result.has_value());
-      REQUIRE(result.error() ==
-              exco::unerr(std::regex_constants::error_complexity).error());
-    }
-
-    SECTION("error_stack") {
-      auto const result = []() -> exco::result_t<int> {
-        throw std::regex_error{std::regex_constants::error_stack};
-        co_return 0;
-      }();
-      REQUIRE_FALSE(result.has_value());
-      REQUIRE(result.error() ==
-              exco::unerr(std::regex_constants::error_stack).error());
-    }
-  }
-
-  SECTION("std::ios_base::failure") {
-    auto const result = []() -> exco::result_t<int> {
-      throw std::ios_base::failure{""};
-      co_return 0;
-    }();
-    REQUIRE_FALSE(result.has_value());
-    REQUIRE(result.error() ==
-            exco::unerr(exco::stdexception::ios_base_failure).error());
   }
 
   SECTION("std::filesystem::filesystem_error") {
