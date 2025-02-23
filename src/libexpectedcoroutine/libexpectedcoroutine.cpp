@@ -2,9 +2,16 @@ module;
 
 #include <coroutine>
 #include <expected>
+#include <filesystem>
+#include <future>
+#include <regex>
+#include <stdexcept>
 #include <system_error>
+#include <type_traits>
 
 export module libexpectedcoroutine;
+export import :stdexception;
+export import :regex_error;
 
 export {
   namespace exco {
@@ -59,7 +66,60 @@ export {
       auto get_return_object() {
         return exco::expected_wrapper<T>{m_ptr_to_wrapper};
       }
-      auto unhandled_exception() {}
+      auto unhandled_exception() {
+        try {
+          throw;
+        } catch (std::invalid_argument const &) {
+          m_ptr_to_wrapper->m_result =
+              exco::unerr(exco::stdexception::invalid_argument);
+        } catch (std::domain_error const &) {
+          m_ptr_to_wrapper->m_result =
+              exco::unerr(exco::stdexception::domain_error);
+        } catch (std::length_error const &) {
+          m_ptr_to_wrapper->m_result =
+              exco::unerr(exco::stdexception::length_error);
+        } catch (std::out_of_range const &) {
+          m_ptr_to_wrapper->m_result =
+              exco::unerr(exco::stdexception::out_of_range);
+        } catch (std::future_error const &e) {
+          m_ptr_to_wrapper->m_result = std::unexpected{e.code()};
+        } catch (std::logic_error const &) {
+          m_ptr_to_wrapper->m_result =
+              exco::unerr(exco::stdexception::logic_error);
+        } catch (std::range_error const &) {
+          m_ptr_to_wrapper->m_result =
+              exco::unerr(exco::stdexception::range_error);
+        } catch (std::overflow_error const &) {
+          m_ptr_to_wrapper->m_result =
+              exco::unerr(exco::stdexception::overflow_error);
+        } catch (std::underflow_error const &) {
+          m_ptr_to_wrapper->m_result =
+              exco::unerr(exco::stdexception::underflow_error);
+        } catch (std::regex_error const &e) {
+          m_ptr_to_wrapper->m_result = exco::unerr(e.code());
+        } catch (std::ios_base::failure const &) {
+          m_ptr_to_wrapper->m_result =
+              exco::unerr(exco::stdexception::ios_base_failure);
+        } catch (std::filesystem::filesystem_error const &e) {
+          m_ptr_to_wrapper->m_result = std::unexpected{e.code()};
+        } catch (std::system_error const &e) {
+          m_ptr_to_wrapper->m_result = std::unexpected{e.code()};
+#if defined(__cpp_transactional_memory) && __cpp_transactional_memory >= 201505
+        } catch (std::tx_exception<int> const &) {
+          static_assert(false, "tx_exception is a template, how to handle it?");
+#endif
+#if defined(__cpp_lib_chrono) && __cpp_lib_chrono >= 201907L
+          static_assert(
+              false, "std::chrono::nonexistent_local_time && "
+                     "std::chrono::ambiguous_local_time not implemented yet");
+#endif
+        } catch (std::exception const &) {
+          m_ptr_to_wrapper->m_result =
+              exco::unerr(exco::stdexception::exception);
+        } catch (...) {
+          m_ptr_to_wrapper->m_result = exco::unerr(exco::stdexception::unknown);
+        }
+      }
       template <typename T1> auto await_transform(exco::result_t<T1> value) {
         m_ptr_to_wrapper->m_result = std::move(value);
         return awaiter_type<T1>{m_ptr_to_wrapper->m_result};

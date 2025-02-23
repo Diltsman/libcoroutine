@@ -3,6 +3,9 @@ target_sources(libexpectedcoroutine
   PUBLIC
     FILE_SET CXX_MODULES FILES
       libexpectedcoroutine.cpp
+      stdexception.cpp
+      regex_error.cpp
+  PRIVATE
 )
 
 target_compile_features(libexpectedcoroutine PRIVATE cxx_std_23)
