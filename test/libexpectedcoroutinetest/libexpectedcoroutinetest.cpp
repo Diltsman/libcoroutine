@@ -198,6 +198,15 @@ TEMPLATE_TEST_CASE_SIG(
 
 TEST_CASE("thrown exceptions converted to correct error_code",
           "[expectedcoroutine]") {
+  SECTION("Non-std::exception thrown") {
+    auto const result = []() -> exco::result_t<int> {
+      throw -1;
+      co_return 0;
+    }();
+    REQUIRE_FALSE(result.has_value());
+    REQUIRE(result.error() == exco::unerr(exco::stdexception::unknown).error());
+  }
+
   SECTION("std::filesystem::filesystem_error") {
     auto const result = []() -> exco::result_t<int> {
       throw std::filesystem::filesystem_error{
